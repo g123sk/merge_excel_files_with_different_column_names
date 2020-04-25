@@ -95,11 +95,12 @@ sub main {
 
   # build excel header mapping
   my $header_map_xl = &read_xlsx($header_map_xl_file);
-  &print_xl($header_map_xl) if ($full_debug);
+  &print_xl($header_map_xl->[0]->{data}) if ($full_debug);
   &build_header_row_mapping($header_map_xl);
 
   # Start from parent directory, read each excel, and then merge them
   &processItem($src_dir);
+
   # write out the final excel output
   &write_out_all_rows($outname);
   &printStat();

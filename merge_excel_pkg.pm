@@ -78,7 +78,7 @@ sub create_mapped_header {
 
     die "Empty header value not allowed \"$header\"\n" if ($header =~ /^\s*$/);
     if (! exists $all_header_mappings_hash{$header}) {
-      #print Dumper \%all_header_mappings_hash;
+      print Dumper \%all_header_mappings_hash;
       die "Unknown header value \"$header\" in excel file \"$my_fname\"\n";
     }
     push @mapped_headers, $all_header_mappings_hash{$header};
@@ -115,10 +115,13 @@ sub print_divider {
 # so we need this mapping. Final output excel will use values in the column one of mapping file and in that order
 sub build_header_row_mapping {
   my ($header_mapping_xl_ref) = @_;
+  
+  my $header_mapping_sheet_info_ref = $header_mapping_xl_ref->[0];
+  my $header_mapping_sheet_data_ref = $header_mapping_sheet_info_ref->{data};
 
-  shift @$header_mapping_xl_ref; # Throw away the header row
+  shift @$header_mapping_sheet_data_ref; # Throw away the header row
 
-  foreach my $row (@$header_mapping_xl_ref) {
+  foreach my $row (@$header_mapping_sheet_data_ref) {
     my $header = shift @$row;
     push @header_row_names, $header; # add new header name
 
@@ -135,24 +138,29 @@ sub build_header_row_mapping {
 sub handle_xl_content {
   my ($xl_ref, $my_fname) = @_;
 
-  # handle header (first row)
-  # create a header mapping between current excel and output excel
-  my $header_row_ref = shift @$xl_ref;
-  my $mapped_headers = &create_mapped_header($header_row_ref, $my_fname);
+  foreach my $sheet_hash (@$xl_ref) {
+    my $sheet_name     = $sheet_hash->{name};
+    my $sheet_data_ref = $sheet_hash->{data};
 
-  if (scalar @$mapped_headers == 0) {
-    &print_divider("=", 40);
-    print "Empty Excel File \"$my_fname\"?\n";
-    &print_divider("=", 40);
-    return 0;
-  }
+    # handle header (first row)
+    # create a header mapping between current excel and output excel
+    my $header_row_ref = shift @$sheet_data_ref;
+    my $mapped_headers = &create_mapped_header($header_row_ref, $my_fname);
 
-  # handle the rows in this excel
-  foreach my $row (@$xl_ref) {
-    my $new_row_ref = &create_new_output_row_with_info($row, $mapped_headers, $my_fname);
-    &add_output_row_to_list($new_row_ref);
-  } # each row
+    if (scalar @$mapped_headers == 0) {
+      &print_divider("=", 40);
+      print "Empty Excel File \"$my_fname\"?\n";
+      &print_divider("=", 40);
+      return 0;
+    }
 
+    # handle the rows in this excel sheet 
+    foreach my $row (@$sheet_data_ref) {
+      my $new_row_ref = &create_new_output_row_with_info($row, $mapped_headers, $my_fname);
+      &add_output_row_to_list($new_row_ref);
+    } # each row in this sheet
+    
+  } # for each sheet
 }
 
 # write final all row into excel output with formatting
@@ -220,6 +228,9 @@ sub read_xls {
 
   for my $worksheet ( $workbook->worksheets() ) {
 
+    my   %curr_sheet_hash     = (); # contains the sheet name and sheet data array reference
+    my   @curr_sheet_data     = ();
+    my   $sheet_name          = $worksheet->get_name();
     my ( $row_min, $row_max ) = $worksheet->row_range();
     my ( $col_min, $col_max ) = $worksheet->col_range();
 
@@ -240,8 +251,13 @@ sub read_xls {
          print "\n" if ($full_debug);
       } # each col
 
-      push @curr_xl, \@curr_row; # add reference of current row
+      push @curr_sheet_data, \@curr_row; # add reference of current row
     } # each row
+    
+    # Add current sheet info into current xl
+    $curr_sheet_hash{name} = $sheet_name;
+    $curr_sheet_hash{data} = \@curr_sheet_data;
+    push @curr_xl, \%curr_sheet_hash;
   } # each worksheet
 
   return (\@curr_xl);
@@ -265,6 +281,10 @@ sub read_xlsx {
 
   foreach my $sheet (@{$excel -> {Worksheet}}) {
 
+    my   %curr_sheet_hash     = (); # contains the sheet name and sheet data array reference
+    my   @curr_sheet_data     = ();
+    my   $sheet_name          = $sheet->{Name};
+
     printf("Sheet: %s\n", $sheet->{Name}) if ($debug);
     printf("maxrow = %0d min row = %0d\n",  $sheet -> {MaxRow},  $sheet -> {MinRow}) if ($full_debug);
     $sheet -> {MaxRow} ||= $sheet -> {MinRow};
@@ -283,9 +303,14 @@ sub read_xlsx {
         printf("( %s , %s ) => %s\n", $row, $col, $val) if ($full_debug);
       } # each col
 
-      push @curr_xl, \@curr_row; # add reference of current row
+      push @curr_sheet_data, \@curr_row; # add reference of current row
     } # each row
-  }
+
+    # Add current sheet info into current xl
+    $curr_sheet_hash{name} = $sheet_name;
+    $curr_sheet_hash{data} = \@curr_sheet_data;
+    push @curr_xl, \%curr_sheet_hash;
+  } # each worksheet
 
   return (\@curr_xl);
 }
@@ -307,11 +332,15 @@ sub read_csv {
   my $workbook = ReadData ($filename);
   print Dumper($workbook) if ($full_debug);
 
-  my $info     = $workbook->[0];
-  print "Parsed $filename with $info->{parser} $info->{version}\n" if ($full_debug);
+  # my $info     = $workbook->[0];
+  # print "Parsed $filename with $info->{parser} $info->{version}\n" if ($full_debug);
 
   my $data     = $workbook->[1];
   print Dumper($data) if ($full_debug);
+
+  my   %curr_sheet_hash     = (); # contains the sheet name and sheet data array reference
+  my   @curr_sheet_data     = ();
+  my   $sheet_name          = "Sheet1"; # Parser does not save this. Since CSV has only one sheet, its okay
 
   foreach my $row (1 .. $data->{maxrow}) {
     my @curr_row = ();
@@ -325,8 +354,14 @@ sub read_csv {
       printf "%-3s ", $val if ($full_debug);
     } # each col
 
-    push @curr_xl, \@curr_row; # add reference of current row
+    printf "\n" if ($full_debug);
+    push @curr_sheet_data, \@curr_row; # add reference of current row
   } # each row
+
+  # Add current sheet info into current xl
+  $curr_sheet_hash{name} = $sheet_name;
+  $curr_sheet_hash{data} = \@curr_sheet_data;
+  push @curr_xl, \%curr_sheet_hash;
 
   return (\@curr_xl);
 }
