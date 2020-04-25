@@ -1,13 +1,15 @@
 # merge_excels_with_different_column_names
 
 ## Overview
-Perl utility to merge all excel files (.xlsx, .xls .csv ignores other file types) in a directory including sub-directories. If the excel files have different headers (column names), they can be mapped accordingly. Works fine with different header column order as well. Supports excel formats like .xls, .xlsx and .csv.
+Perl utility to merge all excel files (.xlsx, .xls .csv ignores other file types) in a directory including sub-directories. If the excel files have different headers (column names), they can be mapped accordingly. Works fine with different header column order as well. 
+
+Supports excel formats like .xls, .xlsx and .csv and multiple worksheets in the same excel.
 
 ## Typical Use Case
 Suited for merging excels that are similar in content but compiled by or from different sources in different excel formats (.xls, .xlsx, .csv). There might be slight differences in the column headers or order. Like `First Name` might be called `first_name` in one excel, `first` in another. It might be 1st column in one excel but 3rd in another. These differences can be mapped with header_map_file. If all excels have the same header, it still works. Just create a mapping file with same mapping (same values in both columns). 
 
 ### Upcoming Features:
-  * Support for reading all sheets in an excel and not just the first one
+  * ~~Support for reading all sheets in an excel and not just the first one~~ Done
   * Auto-generate the header mapping file if all excels have the same header.
   * Support to merge duplicate entries (if different excels have the same entry (same email id or same SSN), merge them)
 
