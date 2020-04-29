@@ -10,7 +10,7 @@ Suited for merging excels that are similar in content but compiled by or from di
 
 ### Upcoming Features:
   * ~~Support for reading all sheets in an excel and not just the first one~~ Done
-  * GUI Front End
+  * GUI Front End for non-tech folks or those without perl installation
   * Auto-generate the header mapping file if all excels have the same header.
   * Support to merge duplicate entries (if different excels have the same entry (same email id or same SSN), merge them)
 
@@ -19,6 +19,8 @@ For better user experience, I have a web front-end mock in mind. If anyone has t
 
 ## System Requirements:
 Need Perl installation with excel packages mentioned in the perl module merge_excel_pkg.pm
+
+I am running on Windows with [Ubuntu 18.04 LTS](https://www.microsoft.com/store/apps/9N9TNGVNDL3Q)
 
 ## Usage
 ```
