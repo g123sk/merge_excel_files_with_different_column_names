@@ -1,12 +1,14 @@
 # merge_excels_with_different_column_names
 
 ## Overview
-Perl utility to merge all excel files (.xlsx, .xls .csv ignores other file types) in a directory including sub-directories. If the excel files have different headers (column names), they can be mapped accordingly. Works fine with different header column order as well. 
+Perl utility to merge all excel files (.xlsx, .xls .csv ignores other file types) in a directory including sub-directories. If the excel files have different headers (column names), they can be mapped accordingly. Works fine with different header column order as well. The column name (header) differences can be mapped with header_map_file. If all excels have the same header, it still works. Just create a mapping file with same mapping (same values in both columns). 
 
-Supports excel formats like .xls, .xlsx and .csv and multiple worksheets in the same excel.
+Supports excel formats like .xls, .xlsx and .csv and multiple worksheets in the same excel. Implemented in Perl and can be customized to individual use cases.
 
 ## Typical Use Case
-Suited for merging excels that are similar in content but compiled by or from different sources in different excel formats (.xls, .xlsx, .csv). There might be slight differences in the column headers or order. Like `First Name` might be called `first_name` in one excel, `first` in another. It might be 1st column in one excel but 3rd in another. These differences can be mapped with header_map_file. If all excels have the same header, it still works. Just create a mapping file with same mapping (same values in both columns). 
+When data is collected by different sources or is sourced from a third party vendor, each excel file might have different column names and order the columns differently. There might be slight differences in the column headers or order. Like `First Name` might be called `first_name` in one excel, `first` in another. It might be 1st column in one excel but 3rd in another. This project is a Perl utility to merge all excel files (.xlsx, .xls .csv ignores other file types) in a directory including sub-directories. 
+
+Merging these excel files manually is inefficient, error-prone and may even be impractical if there are a large number of excel files. Also, these excel files might be in different formats such as .xls, .xlsx, or .csv format and also organized in different directory structure. 
 
 ### Upcoming Features:
   * ~~Support for reading all sheets in an excel and not just the first one~~ Done
