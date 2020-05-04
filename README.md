@@ -10,6 +10,7 @@ Suited for merging excels that are similar in content but compiled by or from di
 
 ### Upcoming Features:
   * ~~Support for reading all sheets in an excel and not just the first one~~ Done
+  * Support for mapping file to be .csv so that it can be edited in command prompt (Youtube user request May 2020)
   * GUI Front End for non-tech folks or those without perl installation
   * Auto-generate the header mapping file if all excels have the same header.
   * Support to merge duplicate entries (if different excels have the same entry (same email id or same SSN), merge them)
