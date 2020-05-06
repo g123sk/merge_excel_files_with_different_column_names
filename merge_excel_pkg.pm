@@ -217,7 +217,9 @@ sub manipulate_cell_value {
 # Add any text manipulation you need on header column names alone
 # called in header handling functions
 sub process_header_value {
-  $_[0] =~ s/^\s+|\s+$//g; # trim both sides. remove leading and trailing whitespaces
+  # trim both sides. remove leading and trailing whitespaces
+  # Ideally this should be done in the manipulate_cell_value function but what if any user needs to preserve the whitespaces?
+  $_[0] =~ s/^\s+|\s+$//g;
 }
 
 # Read Excel with xls extension
