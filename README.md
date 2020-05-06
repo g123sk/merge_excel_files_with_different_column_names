@@ -55,7 +55,7 @@ Merge all excels under directory "all_excels_dir" and merge into excel file "cus
 ```
 merge_excel.pl              Main perl code
 merge_excel_pkg.pm          Package file with all local functions needed
-input_header_mapping.xlsx    Sample mapping file
+input_header_mapping.xlsx   Sample mapping file
 all_excels_dir/             Sample input directory with 3 excel files
                                 Each excel has a list of user properties which will be merged
 output_merged_excel.xlsx    Output merged excel file for the sample inputs
