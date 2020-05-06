@@ -94,7 +94,7 @@ exit(1);
 sub main {
 
   # build excel header mapping
-  my $header_map_xl = &read_xlsx($header_map_xl_file);
+  my $header_map_xl = &readExcelFile($header_map_xl_file);
   &print_xl($header_map_xl->[0]->{data}) if ($full_debug);
   &build_header_row_mapping($header_map_xl);
 
