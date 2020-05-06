@@ -12,7 +12,7 @@ Merging these excel files manually is inefficient, error-prone and may even be i
 
 ### Upcoming Features:
   * ~~Support for reading all sheets in an excel and not just the first one~~ Done
-  * Support for mapping file to be .csv so that it can be edited in command prompt (Youtube user request May 2020)
+  * ~~Support for mapping file to be .csv so that it can be edited in command prompt~~ Done (Youtube user request in comments May 2020)
   * GUI Front End for non-tech folks or those without perl installation
   * Auto-generate the header mapping file if all excels have the same header.
   * Support to merge duplicate entries (if different excels have the same entry (same email id or same SSN), merge them)
