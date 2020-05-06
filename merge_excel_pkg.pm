@@ -19,10 +19,11 @@ our @EXPORT = qw(create_new_output_row add_output_row_to_list
                  $dir_count $file_count $xl_count $non_xl_count
                  %all_header_mappings_hash @header_row_names @all_merged_rows_arr
                  create_mapped_header print_xl build_header_row_mapping
-                 handle_xl_content print_divider write_out_all_rows
+                 handle_curr_xl_content print_divider write_out_all_rows
                  read_xlsx read_xls read_csv
-                 processItem handleDir handleFile
-                 massage_cell_value);
+                 processItem readDir readExcelFile
+                 manipulate_cell_value
+                 process_header_value);
 
 # global vars
 our $debug;                       ## Debug the script. Lower   verbosity [Optional]
@@ -76,8 +77,10 @@ sub create_mapped_header {
 
   foreach my $header ( @{$unmapped_header_arr} ) {
 
-    die "Empty header value not allowed \"$header\"\n" if ($header =~ /^\s*$/);
+    die "Empty header value not allowed but got \"$header\" in $my_fname. Cannot determine how to map empty column names\n" if ($header =~ /^\s*$/);
+    &process_header_value($header);
     if (! exists $all_header_mappings_hash{$header}) {
+      print "Current Header Mapping Hash:\n";
       print Dumper \%all_header_mappings_hash;
       die "Unknown header value \"$header\" in excel file \"$my_fname\"\n";
     }
@@ -122,11 +125,15 @@ sub build_header_row_mapping {
   shift @$header_mapping_sheet_data_ref; # Throw away the header row
 
   foreach my $row (@$header_mapping_sheet_data_ref) {
-    my $header = shift @$row;
-    push @header_row_names, $header; # add new header name
+    my $final_header = shift @$row;
+    die "Final Header column in mapping file cannot have empty entries. This is the column name to be used in output excel\n" if ($final_header =~ /^\s*$/);  
+    &process_header_value($final_header);
+    push @header_row_names, $final_header; # add final column header name to be used in output excel
 
     foreach my $col (@$row) {
-      $all_header_mappings_hash{$col} = $header;
+      next if ($col =~ /^\s*$/); # empty column header. so skip it
+      &process_header_value($col);
+      $all_header_mappings_hash{$col} = $final_header;
     }
   }
 
@@ -135,7 +142,7 @@ sub build_header_row_mapping {
 
 # handle contents of a single excel
 # go through each row, create the merged row entry and add to final excel output row list
-sub handle_xl_content {
+sub handle_curr_xl_content {
   my ($xl_ref, $my_fname) = @_;
 
   foreach my $sheet_hash (@$xl_ref) {
@@ -202,9 +209,15 @@ sub rebuild_merged_row_info {
 
 # Add any text manipulation you need
 # called after reading each cell in the excel
-sub massage_cell_value {
+sub manipulate_cell_value {
   $_[0] =~ s/&amp;/&/g;         # excel cell reads of '&' comes as '&amp;' so change it back to '&'
   $_[0] =~ s/[^[:ascii:]]+//g;  # get rid of non-ASCII characters
+}
+
+# Add any text manipulation you need on header column names alone
+# called in header handling functions
+sub process_header_value {
+  $_[0] =~ s/^\s+|\s+$//g; # trim both sides. remove leading and trailing whitespaces
 }
 
 # Read Excel with xls extension
@@ -241,7 +254,7 @@ sub read_xls {
 
 		     my $cell = $worksheet->get_cell( $row, $col );
          my $val  = $cell ? $cell->value() : "";
-         &massage_cell_value($val);
+         &manipulate_cell_value($val);
 
          push @curr_row, $val; # populate current cell into current row
 
@@ -297,7 +310,7 @@ sub read_xlsx {
       foreach my $col ($sheet -> {MinCol} ..  $sheet -> {MaxCol}) {
         my $cell = $sheet -> {Cells} [$row] [$col];
         my $val  = $cell ? $cell -> {Val} : "";
-        &massage_cell_value($val);
+        &manipulate_cell_value($val);
 
         push @curr_row, $val; # populate current cell into current row
         printf("( %s , %s ) => %s\n", $row, $col, $val) if ($full_debug);
@@ -348,7 +361,7 @@ sub read_csv {
     foreach my $col (1 .. $data->{maxcol}) {
       my $cell = cr2cell ($col, $row);
       my $val  = $cell ? $data->{$cell} : "";
-      &massage_cell_value($val);
+      &manipulate_cell_value($val);
 
       push @curr_row, $val; # populate current cell into current row
       printf "%-3s ", $val if ($full_debug);
@@ -375,11 +388,17 @@ sub processItem {
 	if (-d "$name") {
 		print "$name is a Directory \n" if ($debug);
     ++$dir_count;
-		&handleDir($name);
+		&readDir($name);
 	} elsif (-f $name) {
 		print "$name is a File \n" if ($debug);
     ++$file_count;
-		&handleFile($name);
+		my ($is_curr_file_xl, $curr_xl_content_ref) = &readExcelFile($name);
+
+    # add current excel contents into full hash
+    if ($is_curr_file_xl) {
+      &handle_curr_xl_content($curr_xl_content_ref, $name);
+      ++$xl_count;
+    }
 	}
 	return 0;
 }
@@ -389,7 +408,7 @@ sub processItem {
 # reads the directory contents
 # removes . and ..
 # process every other item in the directory
-sub handleDir() {
+sub readDir() {
 	my ($dname) = @_;
 	opendir (DIR, $dname);
 
@@ -408,9 +427,10 @@ sub handleDir() {
 # Function to handle a single file
 # actions on file items in the dir tree
 # based in excel file type, calls the appropriate excel reading function
-sub handleFile() {
+sub readExcelFile() {
 	my ($fname) = @_;
   my $curr_xl_ref;
+  my $is_xl_file = 1;
 
   #return 0 if ( ($fname !~ /\.xls/) && ($fname !~ /\.xlsx/) && ($fname !~ /\.csv/) );
 
@@ -419,14 +439,11 @@ sub handleFile() {
   elsif ( $fname =~ /\.csv$/  )  { $curr_xl_ref = &read_csv  ($fname); }
   else {
          print "Non Excel File \"$fname\"\n";
+         $is_xl_file = 0; # non_excel file
          ++$non_xl_count;
-         return 0; # nothing to do for non-excel files
        }
 
-  &handle_xl_content($curr_xl_ref, $fname);
-
-  ++$xl_count;
-  return 0;
+  return ($is_xl_file, $curr_xl_ref);
 }
 
 1;
